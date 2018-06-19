@@ -24,19 +24,19 @@ public class ConfigAdapter {
 	private static final String path;
 	
 	static {
-		path = "res/config.cfg";
+		path = "/res/config.cfg";
 	}
 	
 	private ConfigAdapter() {
 		configFile = new Properties();
 		try {
 			if (!new File(path).exists()) {
-				exportDefaultConfig("config.cfg");
+				exportDefaultConfig(path);
 			}
 			configFile.load(new FileInputStream(new File(path)));
 		} catch(Exception exception) {
 			for(StackTraceElement st : Thread.currentThread().getStackTrace())
-				if (st.getClassName().contains("snake.io.Logger") || Thread.currentThread().getStackTrace()[2].getMethodName().contains("initLogger")) {
+				if (st.getClassName().contains("io.Logger")) {
 					exception.printStackTrace();
 					return;
 				}
@@ -93,13 +93,13 @@ public class ConfigAdapter {
 	}
 	
 	public static String getConfigString(String key) {
-		if(!(Thread.currentThread().getStackTrace()[1].getClassName().contains("io.Logger") || Thread.currentThread().getStackTrace()[1].getMethodName().contains("initLogger"))) Logger.getDefaultLogger().logInfo("Loading " + key + " from config");
+		if(!(Thread.currentThread().getStackTrace()[1].getClassName().contains("io.Logger"))) Logger.getDefaultLogger().logInfo("Loading " + key + " from config");
 		if(instance == null) new ConfigAdapter();
 		return instance.getValue(key);
 	}
 	
 	public static boolean setConfigString(String key, String value) {
-		if(!(Thread.currentThread().getStackTrace()[1].getClassName().contains("io.Logger") || Thread.currentThread().getStackTrace()[1].getMethodName().contains("initLogger"))) Logger.getDefaultLogger().logInfo("Setting " + key + " to " + value + " in config");
+		if(!(Thread.currentThread().getStackTrace()[1].getClassName().contains("io.Logger"))) Logger.getDefaultLogger().logInfo("Setting " + key + " to " + value + " in config");
 		if(instance == null) new ConfigAdapter();
 		return instance.setValue(key, value);
 	}
