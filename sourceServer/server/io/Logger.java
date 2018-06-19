@@ -28,7 +28,7 @@ public class Logger {
 	static {
 		ini = new IniAdapter();
 		
-		boolean fileLogging = true;
+		boolean fileLogging = false;
 		setDefaultLogger(new Logger(fileLogging));
 	}
 
@@ -62,7 +62,7 @@ public class Logger {
 	 * @param fileLogging whether the log output will be written into the standard logfile
 	 */
 	public Logger(boolean fileLogging) {
-		this(new File(ini.getString(Server.loggerIniPath, "path").replace("*", "") + "snake.log"));
+		this(fileLogging ? new File(ini.getString(Server.loggerIniPath, "path").replace("*", "") + "server_chatclient.log") : null);
 	}
 
 	/**

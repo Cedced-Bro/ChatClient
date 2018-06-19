@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URISyntaxException;
 import java.util.Properties;
 
 import javax.swing.JOptionPane;
@@ -23,14 +24,14 @@ public class ConfigAdapter {
 	private static final String path;
 	
 	static {
-		path = "data/config.cfg";
+		path = "res/config.cfg";
 	}
 	
 	private ConfigAdapter() {
 		configFile = new Properties();
 		try {
 			if (!new File(path).exists()) {
-				
+				exportDefaultConfig("config.cfg");
 			}
 			configFile.load(new FileInputStream(new File(path)));
 		} catch(Exception exception) {
@@ -71,27 +72,34 @@ public class ConfigAdapter {
 		return true;
 	}
 	
-	private static void exportDefaultConfig() {
+	
+	private static void exportDefaultConfig(String fileName) throws IOException, URISyntaxException {
 		InputStream inputStream = null;
 		OutputStream outputStream = null;
 		try {
-			inputStream = ConfigAdapter.class.getResourceAsStream("res/config.cfg");
+			inputStream = ConfigAdapter.class.getResourceAsStream(fileName);
 			if (inputStream == null)
 				Logger.getDefaultLogger().logError("Couldn't export default-config!");
 			int readBytes;
 			byte[] buffer = new byte[4096];
-			outputStream = new OutputStream(ConfigAdaper.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath().getParentFile().getPath().replace('\\', '/')+"config.cfg");
+			outputStream = new FileOutputStream(new File(ConfigAdapter.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()).getParentFile().getPath().replace('\\', '/')+fileName);
+			while ((readBytes = inputStream.read(buffer)) > 0) {
+				outputStream.write(buffer, 0, readBytes);
+			}
+		} finally {
+			inputStream.close();
+			outputStream.close();
 		}
 	}
 	
 	public static String getConfigString(String key) {
-		if(!(Thread.currentThread().getStackTrace()[2].getClassName().contains("snake.io.Logger") || Thread.currentThread().getStackTrace()[2].getMethodName().contains("initLogger"))) Logger.getDefaultLogger().logInfo("Loading " + key + " from config");
+		if(!(Thread.currentThread().getStackTrace()[1].getClassName().contains("io.Logger") || Thread.currentThread().getStackTrace()[1].getMethodName().contains("initLogger"))) Logger.getDefaultLogger().logInfo("Loading " + key + " from config");
 		if(instance == null) new ConfigAdapter();
 		return instance.getValue(key);
 	}
 	
 	public static boolean setConfigString(String key, String value) {
-		if(!(Thread.currentThread().getStackTrace()[2].getClassName().contains("snake.io.Logger") || Thread.currentThread().getStackTrace()[2].getMethodName().contains("initLogger"))) Logger.getDefaultLogger().logInfo("Setting " + key + " to " + value + " in config");
+		if(!(Thread.currentThread().getStackTrace()[1].getClassName().contains("io.Logger") || Thread.currentThread().getStackTrace()[1].getMethodName().contains("initLogger"))) Logger.getDefaultLogger().logInfo("Setting " + key + " to " + value + " in config");
 		if(instance == null) new ConfigAdapter();
 		return instance.setValue(key, value);
 	}
