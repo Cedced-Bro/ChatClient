@@ -2,6 +2,7 @@ package server;
 
 import server.io.ConfigAdapter;
 import server.io.Logger;
+import server.io.ServerConnection;
 
 /**
  * 
@@ -19,9 +20,16 @@ public class Server {
 		loggerIniPath = "/res/logger.ini";
 	}
 	
+	private static void initServerConnection() {
+		ServerConnection.setPort(Integer.parseInt(ConfigAdapter.getConfigString("port")));
+		ServerConnection.setMaxConnections(Integer.parseInt(ConfigAdapter.getConfigString("maxConnections")));
+		ServerConnection.runConInDaemon(Boolean.parseBoolean(ConfigAdapter.getConfigString("connectionAsDaemon")));
+	}
+	
 	public static void main(String[] args) {
-		Logger.getDefaultLogger().logInfo("Test");
-		System.out.println(ConfigAdapter.getConfigString("test"));
+		Logger.getDefaultLogger().logInfo("Starting Server");
+		initServerConnection();
+		
 	}
 	
 }

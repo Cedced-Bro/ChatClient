@@ -6,12 +6,16 @@ import java.net.ServerSocket;
 public class ServerConnection {
 	// http://cs.lmu.edu/~ray/notes/javanetexamples/
 	private static boolean running;
+	private static boolean startConAsDaemon;
 	private static int port;
+	private static int maxConnections;
 	private static ServerSocket socket;
 	
 	static {
 		running = false;
+		startConAsDaemon = false;
 		port = -1;
+		maxConnections = -1;
 	}
 	
 	private ServerConnection() {}
@@ -20,7 +24,6 @@ public class ServerConnection {
 		try {
 			while (running) new Connection(socket.accept()).start();
 		} catch (IOException exception) {
-			// TODO: Do proper Error-Catching
 			exception.printStackTrace();
 		} 
 	}
@@ -52,7 +55,23 @@ public class ServerConnection {
 		ServerConnection.port = port;
 	}
 	
+	public static void setMaxConnections(int maxConnections) {
+		ServerConnection.maxConnections = maxConnections;
+	}
+	
+	public static void runConInDaemon(boolean startConAsDaemon) {
+		ServerConnection.startConAsDaemon = startConAsDaemon;
+	}
+	
 	public static int getPort() {
 		return port;
+	}
+	
+	public static int getMaxConnections() {
+		return maxConnections;
+	}
+	
+	public static boolean getStartConAsDaemon() {
+		return startConAsDaemon;
 	}
 }

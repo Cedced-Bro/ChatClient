@@ -24,14 +24,14 @@ public class ConfigAdapter {
 	private static final String path;
 	
 	static {
-		path = "/res/config.cfg";
+		path = "res/config.cfg";
 	}
 	
 	private ConfigAdapter() {
 		configFile = new Properties();
 		try {
 			if (!new File(path).exists()) {
-				exportDefaultConfig(path);
+				exportDefaultConfig("/"+path);
 			}
 			configFile.load(new FileInputStream(new File(path)));
 		} catch(Exception exception) {
@@ -72,7 +72,15 @@ public class ConfigAdapter {
 		return true;
 	}
 	
-	
+	/**
+	 * Method to export files out of jar
+	 * 
+	 * @author Cedric
+	 * @version 1.0
+	 * @param fileName The file which should get exported out of the jar
+	 * @throws IOException Gets thrown if an error occurs while exporting
+	 * @throws URISyntaxException Gets thrown if an error occurs while loading jars path
+	 */
 	private static void exportDefaultConfig(String fileName) throws IOException, URISyntaxException {
 		InputStream inputStream = null;
 		OutputStream outputStream = null;
@@ -82,7 +90,12 @@ public class ConfigAdapter {
 				Logger.getDefaultLogger().logError("Couldn't export default-config!");
 			int readBytes;
 			byte[] buffer = new byte[4096];
-			outputStream = new FileOutputStream(new File(ConfigAdapter.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()).getParentFile().getPath().replace('\\', '/')+fileName);
+			String path = (new File(ConfigAdapter.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()).getParentFile().getPath()+fileName).replace('\\', '/');
+			File f = new File(path.substring(0, path.lastIndexOf('/')+1));
+			f.mkdirs();
+			File newConfig = new File(path);
+			newConfig.createNewFile();
+			outputStream = new FileOutputStream(newConfig);
 			while ((readBytes = inputStream.read(buffer)) > 0) {
 				outputStream.write(buffer, 0, readBytes);
 			}
