@@ -1,25 +1,18 @@
 package client;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
+import client.io.ClientConnection;
 
 public class Client {
+	
+	// This is just a testPWD and a testUSR
+	public final static String usr = "admin";
+	public final static String pwd = "password123";
+	
+	private static void startUI() {
+		ClientConnection.connect(usr, pwd);
+	}
+	
 	public static void main(String[] args) {
-		for (int i = 0; i < 100; i++) {
-			try {
-				Thread.sleep(100);
-			} catch (Exception e) {}
-			
-			try {
-				Socket s = new Socket("localhost", 8442);
-				BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
-				PrintWriter out = new PrintWriter(s.getOutputStream());
-				out.println("Test");
-			} catch (Exception e) {
-				
-			}
-		}
+		startUI();	
 	}
 }
