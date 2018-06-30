@@ -47,6 +47,10 @@ public class ServerConnection {
 	// ******************
 	// * Public Methods *
 	// ******************
+	/**
+	 * 
+	 * @return 
+	 */
 	public static boolean start() {
 		if (port == -1) return false;
 		try {
