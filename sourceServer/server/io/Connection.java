@@ -3,12 +3,14 @@ package server.io;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
 import server.Encrypter;
+import server.Encrypter.AES;
+import server.Encrypter.RSA;
 import server.Server;
 
 public class Connection extends Thread {
@@ -31,9 +33,9 @@ public class Connection extends Thread {
 	private int warnings;
 	private Socket socket;
 	private BufferedReader input;
-	private PrintStream output;
+	private PrintWriter output;
 	private Encrypter encrypter;
-	private Encrypter.AES aes;
+	private AES aes;
 	
 	// ****************
 	// * Constructors *
@@ -82,7 +84,7 @@ public class Connection extends Thread {
 		
 		try {
 			input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			output = (PrintStream) socket.getOutputStream();
+			output = new PrintWriter(socket.getOutputStream(), true);
 		} catch (IOException e) {
 			Logger.getDefaultLogger().logError("Could not init Reader and Writer for " + getIpFormat(socket) + " -> Disconnecting");
 			Logger.getDefaultLogger().logException(e);
@@ -93,7 +95,7 @@ public class Connection extends Thread {
 	@Override
 	public void run() {
 		try {
-			if (readLine().equals("RSA")) output.print(true);
+			if (readLine().equals("RSA")) print("true");
 			else {
 				print("false");
 				flush();
@@ -104,14 +106,14 @@ public class Connection extends Thread {
 			
 			// Setup Encryption
 			encrypter = new Encrypter();
-			Encrypter.RSA rsa = encrypter.new RSA();
+			RSA rsa = encrypter.new RSA();
 			aes = encrypter.new AES();
 			try {
 				rsa.generateKeyPair();
 				rsa.setOutsideKey(readLine());
 				print(rsa.getPublicKey());
 				flush();
-				aes.setKey(rsa.decrypt(readLine()));
+				aes.setKey(readLine());
 				encrypted = true;
 				print("SUCCESS");
 				flush();
@@ -140,6 +142,8 @@ public class Connection extends Thread {
 						return;
 					}
 				}
+				print("OK");
+				flush();
 			} else if (netBuffer.substring(0, 3).equals("REG")) {
 				createNewUser(netBuffer);
 			} else if (netBuffer.substring(0, 3).equals("RES")) {
@@ -202,7 +206,7 @@ public class Connection extends Thread {
 		}
 	}
 	
-	public static void disconnect(Socket socket, PrintStream output, BufferedReader input) {
+	public static void disconnect(Socket socket, PrintWriter output, BufferedReader input) {
 		try {
 			output.close();
 			input.close();
@@ -260,6 +264,7 @@ public class Connection extends Thread {
 	
 	private void flush() {
 		// I added this method to maybe add a network logger in the future
+		output.print("\n");
 		output.flush();
 	}
 	

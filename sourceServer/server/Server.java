@@ -7,7 +7,7 @@ import server.io.ServerConnection;
 /**
  * 
  * @author Cedric
- * @version 0.0
+ * @version 1.0
  */
 public class Server {
 	
