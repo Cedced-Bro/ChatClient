@@ -42,6 +42,7 @@ public class IniAdapter {
 				lastIni.load(this.getClass().getResourceAsStream(path));
 				lastIniPath = path;
 			} catch (Exception exception) {
+				// TODO: Error Handling
 				// This Error can't be suppressed
 				if(notFromLogger) {
 					Logger.getDefaultLogger().logError("Could't load " + key + " from " + path);

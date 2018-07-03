@@ -1,4 +1,4 @@
-package client;
+package server;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -27,6 +27,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import server.io.ConfigAdapter;
 import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
 
@@ -42,22 +43,22 @@ public final class Encrypter {
 	// *****************
 	// * Key-Exchanges *
 	// *****************
-	public static class RSA {
-		private static KeyPair keyPair = null;
-		private static Key publicOutsideKey = null;
-		private static Cipher cipher = null;
+	public class RSA {
+		private KeyPair keyPair = null;
+		private Key publicOutsideKey = null;
+		private Cipher cipher = null;
 
 		/**
 		 * This Method created 2 separate RSA-Keys for encryption and decryption and returns the public key.
 		 *
 		 * @return the public Key of 2 new generated Keys
 		 */
-		public static String generateKeyPair() {
+		public String generateKeyPair() {
 			String publicKey = null;
 			try {
 				// Initializing KeyGenerator
 				KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-				keyGen.initialize(Integer.parseInt(Client.defaultIni.getString(Client.defaultIniPath, "encryption.RSA.keySize")), new SecureRandom());
+				keyGen.initialize(Integer.parseInt(ConfigAdapter.getConfigString("encryption.RSA.keySize")), new SecureRandom());
 				keyPair = keyGen.genKeyPair();
 				
 				// Get Public Key
@@ -72,8 +73,8 @@ public final class Encrypter {
 		 * 
 		 * @param publicOutsideKey Key from outside
 		 */
-		public static void setOutsideKey(String publicOutsideKey) {
-			RSA.publicOutsideKey = Encrypter.getPublicKey(publicOutsideKey, "RSA");
+		public void setOutsideKey(String publicOutsideKey) {
+			this.publicOutsideKey = Encrypter.getPublicKey(publicOutsideKey, "RSA");
 		}
 		
 		/**
@@ -81,7 +82,7 @@ public final class Encrypter {
 		 * 
 		 * @return the public key
 		 */
-		public static String getPublicKey() {			
+		public String getPublicKey() {			
 			return Encrypter.publicKeyToString(keyPair.getPublic());
 		}
 		
@@ -91,7 +92,7 @@ public final class Encrypter {
 		 * @param msg the message which needs to be encrypted
 		 * @return the encrypted message
 		 */
-		public static String encrypt(String msg) {
+		public String encrypt(String msg) {
 			try {
 				// public key needs to be set first
 				if (publicOutsideKey == null) return msg;
@@ -114,7 +115,7 @@ public final class Encrypter {
 		 * @param msg the encrypted String
 		 * @return the decrypted message
 		 */
-		public static String decrypt(String msg) {			
+		public String decrypt(String msg) {			
 			try {
 				byte[] bytes = Base64.getDecoder().decode(msg);
 				cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
@@ -132,7 +133,7 @@ public final class Encrypter {
 		 * This method clears all keys and the memory.
 		 * WARNING: This deletes all saved keys!
 		 */
-		public static void clear() {
+		public void clear() {
 			keyPair = null;
 			publicOutsideKey = null;
 		}
@@ -158,7 +159,7 @@ public final class Encrypter {
 		public static KeyPair generateKey() {
 			try {
 				KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC", "SunEC");
-				String ellipticCurveSize = Client.defaultIni.getString(Client.defaultIniPath, "encryption.ECDH.keySize");
+				String ellipticCurveSize = ConfigAdapter.getConfigString("encryption.ECDH.keySize");
 				try {
 					keyGen.initialize(Integer.parseInt(ellipticCurveSize), new SecureRandom());
 				} catch (Exception e) {
@@ -178,7 +179,6 @@ public final class Encrypter {
 		public static void setupKeyAggreement(KeyPair outsideKey) {
 			try {
 				KeyAgreement ecdhKeyAgreement = KeyAgreement.getInstance("ECDH");
-				
 			} catch (NoSuchAlgorithmException e) {
 				e.printStackTrace();
 			}
@@ -203,25 +203,25 @@ public final class Encrypter {
 	/**
 	 * 
 	 * @author Cedric
-	 *
+	 * @version 1.0
 	 */
-	public static class AES {
-		private static SecretKey key = null;
-		private static Cipher cipher = null;
+	public class AES {
+		private SecretKey key = null;
+		private Cipher cipher = null;
 		
-		public static void setKey(String key) {
-			AES.key = Encrypter.getSecretKey(key, "AES");
+		public void setKey(String key) {
+			this.key = Encrypter.getSecretKey(key, "AES");
 		}
 		
-		public static String getKey() {
+		public String getKey() {
 			return Encrypter.secretKeyToString(key);
 		}
 		
-		public static String generateKey() {
+		public String generateKey() {
 			KeyGenerator keyGen;
 			try {
 				keyGen = KeyGenerator.getInstance("AES");
-				keyGen.init(Integer.parseInt(Client.defaultIni.getString(Client.defaultIniPath, "encryption.AES.keySize")), new SecureRandom());
+				keyGen.init(Integer.parseInt(ConfigAdapter.getConfigString("encryption.AES.keySize")), new SecureRandom());
 				key = keyGen.generateKey();
 				return Encrypter.secretKeyToString(key);
 			} catch (NoSuchAlgorithmException e) {
@@ -231,7 +231,7 @@ public final class Encrypter {
 			return null;
 		}
 		
-		public static String encrypt(String msg) {
+		public String encrypt(String msg) {
 			try {
 				if (key == null) return msg;
 				if (cipher == null) cipher = Cipher.getInstance("AES");
@@ -243,7 +243,7 @@ public final class Encrypter {
 			return msg;
 		}
 		
-		public static String decrypt(String msg) {
+		public String decrypt(String msg) {
 			byte[] bytes = Base64.getDecoder().decode(msg);
 			try {
 				cipher.init(Cipher.DECRYPT_MODE, key);

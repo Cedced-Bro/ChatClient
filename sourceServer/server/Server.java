@@ -11,6 +11,10 @@ import server.io.ServerConnection;
  */
 public class Server {
 	
+	// This is just a testPWD and a testUSR
+	public final static String usr = "root";
+	public final static String pwd = "toor";
+	
 	// ********************
 	// * Public variables *
 	// ********************
@@ -20,12 +24,26 @@ public class Server {
 		loggerIniPath = "/res/logger.ini";
 	}
 	
+	// *******************
+	// * Private methods *
+	// *******************
+	/**
+	 * Initializes the Server-Listener
+	 */
 	private static void initServerConnection() {
 		ServerConnection.setPort(Integer.parseInt(ConfigAdapter.getConfigString("port")));
 		ServerConnection.setMaxConnections(Integer.parseInt(ConfigAdapter.getConfigString("maxConnections")));
 		ServerConnection.runConInDaemon(Boolean.parseBoolean(ConfigAdapter.getConfigString("connectionAsDaemon")));
 	}
 	
+	// ******************
+	// * Public Methods *
+	// ******************
+	/**
+	 * This is the Main method which starts the Server
+	 * 
+	 * @param args not important
+	 */
 	public static void main(String[] args) {
 		Logger.getDefaultLogger().logInfo("Starting Server");
 		initServerConnection();

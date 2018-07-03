@@ -33,13 +33,18 @@ public class ServerConnection {
 		try {
 			while (running) {
 				Connection c = null;
-				if (maxConnections > Connection.runningCons.size()) c = new Connection(socket.accept());
-				if (startConAsDaemon) c.setDaemon(true);
-				c.start();
+				if (maxConnections > Connection.runningCons.size() || maxConnections == -1) {
+					c = new Connection(socket.accept());
+					if (startConAsDaemon) c.setDaemon(true);
+					c.start();
+				} else {
+					Thread.sleep(10);
+				}
 			}
+			Connection.disconnectAll();
 			socket.close();
 			Logger.getDefaultLogger().logInfo("Server does not listen any more");
-		} catch (IOException exception) {
+		} catch (IOException | InterruptedException exception) {
 			exception.printStackTrace();
 		} 
 	}
