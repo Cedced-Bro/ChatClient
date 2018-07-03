@@ -6,8 +6,8 @@ import client.io.IniAdapter;
 public class Client {
 	
 	// This is just a testPWD and a testUSR
-	public final static String usr = "admin";
-	public final static String pwd = "password123";
+	public final static String usr = "root";
+	public final static String pwd = "toor";
 	
 	public static final IniAdapter defaultIni;
 	public static final String defaultIniPath;

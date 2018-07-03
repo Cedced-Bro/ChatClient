@@ -31,7 +31,7 @@ public class IniAdapter {
 		boolean notFromLogger = true;
 		
 		for(StackTraceElement st : Thread.currentThread().getStackTrace())
-			notFromLogger = (!st.getClassName().contains("server.io.Logger") && notFromLogger);
+			notFromLogger = (!st.getClassName().contains("client.io.Logger") && notFromLogger);
 		
 		if(notFromLogger) {
 			Logger.getDefaultLogger().logInfo("Loading " + key + " from " + path);
