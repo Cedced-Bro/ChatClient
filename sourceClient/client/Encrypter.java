@@ -52,12 +52,13 @@ public final class Encrypter {
 		 *
 		 * @return the public Key of 2 new generated Keys
 		 */
-		public static String generateKeyPair() {
+		public static String generateKeyPair(int keySize) {
 			String publicKey = null;
 			try {
 				// Initializing KeyGenerator
 				KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-				keyGen.initialize(Integer.parseInt(Client.defaultIni.getString(Client.defaultIniPath, "encryption.RSA.keySize")), new SecureRandom());
+//				keyGen.initialize(Integer.parseInt(Client.defaultIni.getString(Client.defaultIniPath, "encryption.RSA.keySize")), new SecureRandom());
+				keyGen.initialize(keySize, new SecureRandom());
 				keyPair = keyGen.genKeyPair();
 				
 				// Get Public Key
@@ -262,11 +263,13 @@ public final class Encrypter {
 	// *******************
 	private static PublicKey getPublicKey(String key, String alg) {
 		try {
-			byte[] data = new BASE64Decoder().decodeBuffer(key);
+//			byte[] data = new BASE64Decoder().decodeBuffer(key);
+			byte[] data = Base64.getDecoder().decode(key);
+//			byte[] data = key.getBytes();
 			X509EncodedKeySpec keySpec = new X509EncodedKeySpec(data);
 			KeyFactory factory = KeyFactory.getInstance(alg);
 			return factory.generatePublic(keySpec);
-		} catch (IOException | InvalidKeySpecException | NoSuchAlgorithmException e) {
+		} catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
 		return null;

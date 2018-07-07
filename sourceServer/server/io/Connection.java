@@ -95,7 +95,18 @@ public class Connection extends Thread {
 	@Override
 	public void run() {
 		try {
-			if (readLine().equals("RSA")) print("true");
+			
+			encrypter = new Encrypter();
+			RSA rsa = encrypter.new RSA();
+			rsa.setKeySize();
+			aes = encrypter.new AES();
+			
+			if (readLine().equals("RSA")) {
+				print("true");
+				flush();
+				print(rsa.getKeySize() + "");
+				flush();
+			}
 			else {
 				print("false");
 				flush();
@@ -105,20 +116,19 @@ public class Connection extends Thread {
 			}
 			
 			// Setup Encryption
-			encrypter = new Encrypter();
-			RSA rsa = encrypter.new RSA();
-			aes = encrypter.new AES();
 			try {
 				rsa.generateKeyPair();
 				rsa.setOutsideKey(readLine());
-				print(rsa.getPublicKey());
+				print(rsa.getPublicKey().replaceAll("[\r\n]", ""));
 				flush();
 				aes.setKey(readLine());
-				encrypted = true;
 				print("SUCCESS");
 				flush();
+				encrypted = true;
 //				Logger.getDefaultLogger().logInfo("Using AES encryption to " + getIpFormat(socket) + " now"); // Use this in own Network Logger
 			} catch (Exception e) {
+				try { Thread.sleep(100); } catch(Exception ex) {}
+				e.printStackTrace();
 				print("ERROR");
 				flush();
 				disconnect(socket, output, input);
@@ -127,10 +137,10 @@ public class Connection extends Thread {
 			
 			// Just for buffering received messages from a client
 			String netBuffer = null;
-			if ((netBuffer = readLine()).equals("LOGIN")) {
+			if ((netBuffer = readLine()).equals("LOGIN")) { // Login
 				// TODO! Benutze User aus der Database --> Siehe DatabaseConnector + benutze SQLight + userIds
 				int i = 0;
-				while (!(readLine()).equals(Server.usr + '\\' + Server.pwd)) {
+				while (!(readLine()).equals(Server.usr + '\\' + Server.pwd)) { // Check for correct login
 					print("INV_LOGIN"+i);
 					flush();
 					i++;
@@ -144,9 +154,9 @@ public class Connection extends Thread {
 				}
 				print("OK");
 				flush();
-			} else if (netBuffer.substring(0, 3).equals("REG")) {
+			} else if (netBuffer.substring(0, 3).equals("REG")) { // Register
 				createNewUser(netBuffer);
-			} else if (netBuffer.substring(0, 3).equals("RES")) {
+			} else if (netBuffer.substring(0, 3).equals("RES")) { // Reset
 				resetUser(netBuffer);
 			} else {
 				print("ERROR");
@@ -158,32 +168,50 @@ public class Connection extends Thread {
 			boolean running = true;
 			while (running) {
 				netBuffer = readLine();
-				if (netBuffer.equals("DISC")) {
+				if (netBuffer.equals("DISC")) {										// Disconnect
 					runningCons.remove(socket);
 					print("OK");
 					flush();
-				} else if (netBuffer.substring(0, 4).equals("MSG\\")) {
-					addMessage(netBuffer.substring(4));
-				} else if (netBuffer.substring(0, 5).equals("MSGG\\")) {
-					addGroupMessage(netBuffer.substring(5));
-				} else if (netBuffer.substring(0, 7).equals("CHGUSR\\")) {
-					changeUser(netBuffer.substring(7));
-				} else if (netBuffer.substring(0, 4).equals("DELUSR")) {
+					running = false;
+				} else if (netBuffer.equals("DELUSR")) {							// Delete User
 					deleteUser();
+					print("OK");
+					flush();
+					continue;
+				} else if (netBuffer.length() > 7) {								// Smaller than 7 is not useful for any already implemented command
+					if (netBuffer.substring(0, 4).equals("MSG\\")) {				// Message
+						addMessage(netBuffer.substring(4));
+						print("OK");
+						flush();
+						continue;
+					} else if (netBuffer.length() > 8) {
+						if (netBuffer.substring(0, 5).equals("MSGG\\")) {			// Group-Message
+							addGroupMessage(netBuffer.substring(5));
+							print("OK");
+							flush();
+							continue;
+						} else if (netBuffer.length() > 9) {						// Change User-Data
+							if (netBuffer.substring(0, 7).equals("CHGUSR\\")) {
+								changeUser(netBuffer.substring(7));
+								print("OK");
+								flush();
+								continue;
+							}
+						}
+					} 
+				}															// Unknown command
+				if (maxWarnings == -1 || maxWarnings < warnings) {
+					print("WARN");												// Warning
+					flush();
 				} else {
-					if (maxWarnings == -1 || maxWarnings < warnings) {
-						print("WARN");
-						flush();
-					} else {
-						print("TMWARN");
-						flush();
-						Logger.getDefaultLogger().logWarning("Disconnecting " + getIpFormat(socket) + " because of too many wrong packets");
-						disconnect(socket, output, input);
-					}
+					print("TMWARN");											// Too many warnings
+					flush();
+					Logger.getDefaultLogger().logWarning("Disconnecting " + getIpFormat(socket) + " because of too many wrong packets");
+					disconnect(socket, output, input);
 				}
 			}
 			
-		} catch (IOException e) {
+		} catch (IndexOutOfBoundsException | IOException e) {
 			Logger.getDefaultLogger().logError("Error occured while sending or receiving packages from " + getIpFormat(socket) + " -> Disconnecting");
 			Logger.getDefaultLogger().logException(e);
 			disconnect(socket, output, input);

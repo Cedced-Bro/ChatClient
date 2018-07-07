@@ -50,8 +50,9 @@ public class ClientConnection extends Thread {
 			}
 			
 			try {
-				RSA.generateKeyPair();
-				print(RSA.getPublicKey());
+				int keySize = Integer.parseInt(readLine());
+				RSA.generateKeyPair(keySize);
+				print(RSA.getPublicKey().replaceAll("[\r\n]", ""));
 				flush();
 				String response = readLine();
 				if (response.equals("ERROR")) {
@@ -59,7 +60,7 @@ public class ClientConnection extends Thread {
 				}
 				RSA.setOutsideKey(response);
 				AES.generateKey();
-				print(AES.getKey());
+				print(AES.getKey().replaceAll("[\r\n]", ""));
 				flush();
 				if (readLine().equals("SUCCESS")) {
 					// TODO!
@@ -68,13 +69,21 @@ public class ClientConnection extends Thread {
 					// TODO!
 				}
 			} catch (Exception e) {
+				e.printStackTrace();
+				return;
 				// TODO!
 			}
 			
 			print("LOGIN");
 			flush();
 			
-			print(usr.replaceAll("\\", "\\\\") + '\\' + pwd.replaceAll("\\", "\\\\"));
+			String sendUsr = usr;
+			String sendPwd = pwd;
+			if (usr.contains("\\")) sendUsr = usr.replaceAll("\\", "\\\\");
+			if (pwd.contains("\\")) sendPwd = pwd.replaceAll("\\", "\\\\");
+			
+			// Last letter of Usr mustn't be a \\ !
+			print(sendUsr + "\\" + sendPwd);
 			flush();
 			
 			if (readLine().equals("OK")) {
@@ -86,14 +95,34 @@ public class ClientConnection extends Thread {
 			print("MSG\\Das ist ein Test@Hallo");
 			flush();
 			
+			if (!readLine().equals("OK")) {
+				print("DISC");
+				flush();
+			}
+			
 			print("MSGG\\Das ist ein Test2@Group");
 			flush();
+			
+			if (!readLine().equals("OK")) {
+				print("DISC");
+				flush();
+			}
 			
 			print("CHGUSR\\asdf");
 			flush();
 			
+			if (!readLine().equals("OK")) {
+				print("DISC");
+				flush();
+			}
+			
 			print("DELUSR");
 			flush();
+			
+			if (!readLine().equals("OK")) {
+				print("DISC");
+				flush();
+			}
 			
 			print("DISC");
 			flush();
@@ -139,6 +168,7 @@ public class ClientConnection extends Thread {
 	}
 	
 	private static void print(String msg) {
+		System.out.println("->"+msg);
 		if (encrypted) msg = Encrypter.AES.encrypt(msg);
 		output.print(msg);
 	}
@@ -151,6 +181,7 @@ public class ClientConnection extends Thread {
 	private static String readLine() throws IOException {
 		String msg = input.readLine();
 		if (encrypted) msg = Encrypter.AES.decrypt(msg);
+		System.out.println("<-"+msg);
 		return msg;
 	}
 }

@@ -44,10 +44,11 @@ public final class Encrypter {
 	// * Key-Exchanges *
 	// *****************
 	public class RSA {
+		private int keySize = -1;
 		private KeyPair keyPair = null;
 		private Key publicOutsideKey = null;
 		private Cipher cipher = null;
-
+		
 		/**
 		 * This Method created 2 separate RSA-Keys for encryption and decryption and returns the public key.
 		 *
@@ -58,7 +59,8 @@ public final class Encrypter {
 			try {
 				// Initializing KeyGenerator
 				KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-				keyGen.initialize(Integer.parseInt(ConfigAdapter.getConfigString("encryption.RSA.keySize")), new SecureRandom());
+				if (keySize == -1) Integer.parseInt(ConfigAdapter.getConfigString("RSAKeySize"));
+				keyGen.initialize(keySize, new SecureRandom());
 				keyPair = keyGen.genKeyPair();
 				
 				// Get Public Key
@@ -68,6 +70,15 @@ public final class Encrypter {
 			}
 			return publicKey;
 		}
+		
+		public void setKeySize() {
+			keySize = Integer.parseInt(ConfigAdapter.getConfigString("RSAKeySize"));
+		}
+		
+		public int getKeySize() {
+			return keySize == -1 ? keySize = Integer.parseInt(ConfigAdapter.getConfigString("RSAKeySize")) : keySize;
+		}
+		
 		/**
 		 * This method sets the public Key from outside.
 		 * 
@@ -246,9 +257,10 @@ public final class Encrypter {
 		public String decrypt(String msg) {
 			byte[] bytes = Base64.getDecoder().decode(msg);
 			try {
+				if (cipher == null) cipher = Cipher.getInstance("AES");
 				cipher.init(Cipher.DECRYPT_MODE, key);
 				return new String(cipher.doFinal(bytes), "UTF-8");
-			} catch (InvalidKeyException | UnsupportedEncodingException | IllegalBlockSizeException | BadPaddingException e) {
+			} catch (InvalidKeyException | UnsupportedEncodingException | IllegalBlockSizeException | BadPaddingException | NoSuchAlgorithmException | NoSuchPaddingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -262,11 +274,11 @@ public final class Encrypter {
 	// *******************
 	private static PublicKey getPublicKey(String key, String alg) {
 		try {
-			byte[] data = new BASE64Decoder().decodeBuffer(key);
+			byte[] data = Base64.getDecoder().decode(key);
 			X509EncodedKeySpec keySpec = new X509EncodedKeySpec(data);
 			KeyFactory factory = KeyFactory.getInstance(alg);
 			return factory.generatePublic(keySpec);
-		} catch (IOException | InvalidKeySpecException | NoSuchAlgorithmException e) {
+		} catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
 		return null;
