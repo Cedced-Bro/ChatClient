@@ -12,11 +12,12 @@ import server.Encrypter;
 import server.Encrypter.AES;
 import server.Encrypter.RSA;
 import server.Server;
+import server.User;
 
 public class Connection extends Thread {
 
-	public static List<Socket> runningCons;
-	
+	public static List<Connection> runningCons;
+
 	static {
 		runningCons = new ArrayList<>();
 	}
@@ -36,6 +37,7 @@ public class Connection extends Thread {
 	private PrintWriter output;
 	private Encrypter encrypter;
 	private AES aes;
+	private User usr;
 	
 	// ****************
 	// * Constructors *
@@ -44,7 +46,7 @@ public class Connection extends Thread {
 		warnings = 0;
 		encrypted = false;
 		this.socket = socket;
-		runningCons.add(socket);
+		runningCons.add(this);
 		// Loading logConState from Config --> needs to be catched seperatly
 		try {
 			logConState = Boolean.parseBoolean(ConfigAdapter.getConfigString("logConState"));
@@ -95,7 +97,6 @@ public class Connection extends Thread {
 	@Override
 	public void run() {
 		try {
-			
 			encrypter = new Encrypter();
 			RSA rsa = encrypter.new RSA();
 			rsa.setKeySize();
@@ -140,7 +141,22 @@ public class Connection extends Thread {
 			if ((netBuffer = readLine()).equals("LOGIN")) { // Login
 				// TODO! Benutze User aus der Database --> Siehe DatabaseConnector + benutze SQLight + userIds
 				int i = 0;
-				while (!(readLine()).equals(Server.usr + '\\' + Server.pwd)) { // Check for correct login
+				boolean correctLogin = false;
+				while (!correctLogin) { // Check for correct login
+					netBuffer = readLine();
+					for (String s : Server.usr) {
+						if (s.equals(netBuffer.substring(0, netBuffer.indexOf("\\")))) {
+							for (int j = 0; j < Server.pwd.length; j++) {
+								if (netBuffer.substring(netBuffer.indexOf("\\")+1).equals(Server.pwd[j])) {
+									this.usr = new User(Server.ID[j], s, Server.pwd[j]);
+									correctLogin = true;
+									j = Server.pwd.length;
+								}
+							}
+						}
+						if (correctLogin) break;
+					}
+					if (correctLogin) continue;
 					print("INV_LOGIN"+i);
 					flush();
 					i++;
@@ -154,9 +170,9 @@ public class Connection extends Thread {
 				}
 				print("OK");
 				flush();
-			} else if (netBuffer.substring(0, 3).equals("REG")) { // Register
+			} else if (netBuffer.substring(0, 3).equals("REG")) { 			// Register
 				createNewUser(netBuffer);
-			} else if (netBuffer.substring(0, 3).equals("RES")) { // Reset
+			} else if (netBuffer.substring(0, 3).equals("RES")) { 			// Reset
 				resetUser(netBuffer);
 			} else {
 				print("ERROR");
@@ -165,55 +181,62 @@ public class Connection extends Thread {
 			}
 
 			// From now on: listening for Commands
-			boolean running = true;
+			boolean running = true, handled = false;
 			while (running) {
 				netBuffer = readLine();
-				if (netBuffer.equals("DISC")) {										// Disconnect
-					runningCons.remove(socket);
-					print("OK");
-					flush();
+				if (netBuffer.equals("DISC")) {								// Disconnect
+					runningCons.remove(this);
 					running = false;
-				} else if (netBuffer.equals("DELUSR")) {							// Delete User
+					try {
+						Thread.sleep(500); 									// The Client has 500 ms to disconnect by himself
+					} catch(InterruptedException e) {}						// --> there should be no exception
+					handled = true;
+				} else if (netBuffer.equals("DELUSR")) {					// Delete User
 					deleteUser();
 					print("OK");
 					flush();
-					continue;
-				} else if (netBuffer.length() > 7) {								// Smaller than 7 is not useful for any already implemented command
-					if (netBuffer.substring(0, 4).equals("MSG\\")) {				// Message
-						addMessage(netBuffer.substring(4));
+					handled = true;
+				} else if (netBuffer.length() > 12) {
+					if (netBuffer.substring(0, 5).equals("MSGG\\")) {		// Group-Message
+						addGroupMessage(netBuffer.substring(6));
 						print("OK");
 						flush();
-						continue;
-					} else if (netBuffer.length() > 8) {
-						if (netBuffer.substring(0, 5).equals("MSGG\\")) {			// Group-Message
-							addGroupMessage(netBuffer.substring(5));
-							print("OK");
-							flush();
-							continue;
-						} else if (netBuffer.length() > 9) {						// Change User-Data
-							if (netBuffer.substring(0, 7).equals("CHGUSR\\")) {
-								changeUser(netBuffer.substring(7));
-								print("OK");
-								flush();
-								continue;
-							}
-						}
-					} 
-				}															// Unknown command
-				if (maxWarnings == -1 || maxWarnings < warnings) {
-					print("WARN");												// Warning
+						handled = true;
+					}
+				} 
+				if (netBuffer.length() > 11) {
+					if (netBuffer.substring(0, 4).equals("MSG\\")) {		// Message
+						if (addMessage(netBuffer.substring(4))) print("OK");
+						else print("ERR");
+						flush();
+						handled = true;
+					}
+				}
+				if (netBuffer.length() > 9) {								// Change User-Data
+					if (netBuffer.substring(0, 7).equals("CHGUSR\\")) {
+						changeUser(netBuffer.substring(7));
+						print("OK");
+						flush();
+						handled = true;
+					}
+				}
+				if (!handled) {
+					if (maxWarnings == -1 || maxWarnings < warnings) { // Unknown command
+					print("WARN");											// Warning
 					flush();
-				} else {
-					print("TMWARN");											// Too many warnings
-					flush();
-					Logger.getDefaultLogger().logWarning("Disconnecting " + getIpFormat(socket) + " because of too many wrong packets");
-					disconnect(socket, output, input);
+					} else {
+						print("TMWARN");										// Too many warnings
+						flush();
+						Logger.getDefaultLogger().logWarning("Disconnecting " + getIpFormat(socket) + " because of too many wrong packets");
+						disconnect(socket, output, input);
+					}
 				}
 			}
 			
 		} catch (IndexOutOfBoundsException | IOException e) {
 			Logger.getDefaultLogger().logError("Error occured while sending or receiving packages from " + getIpFormat(socket) + " -> Disconnecting");
 			Logger.getDefaultLogger().logException(e);
+		} finally {
 			disconnect(socket, output, input);
 		}
 	}
@@ -230,7 +253,7 @@ public class Connection extends Thread {
 			Logger.getDefaultLogger().logError("Connection " + getIpFormat(socket) + " was  insecurely unbinded");
 			Logger.getDefaultLogger().logException(e);
 		} finally {
-			runningCons.remove(socket);
+			for (int i = 0; i < runningCons.size(); i++) if (runningCons.get(i).socket.equals(socket)) runningCons.remove(i);
 		}
 	}
 	
@@ -250,13 +273,27 @@ public class Connection extends Thread {
 	 * This method stops all running Connections
 	 */
 	public static void disconnectAll() {
-		for (Socket socket : runningCons) disconnect(socket);
+		for (Connection connection : runningCons) disconnect(connection.socket);
 		Logger.getDefaultLogger().logInfo("All running connections interruped");
 	}
 	
-	private void addMessage(String string) {
-		// TODO Auto-generated method stub
-		System.out.println("Hello from addMessage: " + string);
+	private boolean addMessage(String msg) {
+		try {
+			User msgUsr = new User(msg.substring(0, msg.indexOf("\\\\")));
+			User targetUsr = new User(msg.substring(msg.indexOf(msgUsr.id)+msgUsr.id.length()+2, msg.indexOf("\\\\", msg.indexOf("\\\\")+1)));
+			for (Connection connection : runningCons) {
+				if (connection.usr.id.equals(targetUsr.id)) {
+					connection.print("MSG\\" + connection.usr.id + "\\\\" + msg.substring(msg.indexOf("\\\\", msg.indexOf("\\\\")+1)+2));
+					connection.flush();
+					return true;
+				}
+			}
+			Logger.getDefaultLogger().logWarning("No User (id: " + targetUsr.id + ", usr: " + targetUsr.getUsr() + ") found. Message could not be sent!");
+			return false;
+		} catch(Exception e) {
+			Logger.getDefaultLogger().logError("Wrong message-format! No message was sent.");
+			return false;
+		}
 	}
 	
 	private void addGroupMessage(String string) {
@@ -286,6 +323,7 @@ public class Connection extends Thread {
 	
 	private void print(String msg) {
 		// I added this method to maybe add a network logger in the future
+		System.out.println("->"+msg);
 		if (encrypted) msg = aes.encrypt(msg);
 		output.print(msg);
 	}
@@ -300,6 +338,7 @@ public class Connection extends Thread {
 		// I added this method to maybe add a network logger in the future
 		String msg = input.readLine();
 		if (encrypted) msg = aes.decrypt(msg);
+		System.out.println("<-"+msg);
 		return msg;
 	}
 	

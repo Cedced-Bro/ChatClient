@@ -1,6 +1,5 @@
 package client;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -27,7 +26,6 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
 
 /**
@@ -159,7 +157,7 @@ public final class Encrypter {
 		public static KeyPair generateKey() {
 			try {
 				KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC", "SunEC");
-				String ellipticCurveSize = Client.defaultIni.getString(Client.defaultIniPath, "encryption.ECDH.keySize");
+				String ellipticCurveSize = Main.defaultIni.getString(Main.defaultIniPath, "encryption.ECDH.keySize");
 				try {
 					keyGen.initialize(Integer.parseInt(ellipticCurveSize), new SecureRandom());
 				} catch (Exception e) {
@@ -222,7 +220,7 @@ public final class Encrypter {
 			KeyGenerator keyGen;
 			try {
 				keyGen = KeyGenerator.getInstance("AES");
-				keyGen.init(Integer.parseInt(Client.defaultIni.getString(Client.defaultIniPath, "encryption.AES.keySize")), new SecureRandom());
+				keyGen.init(Integer.parseInt(Main.defaultIni.getString(Main.defaultIniPath, "encryption.AES.keySize")), new SecureRandom());
 				key = keyGen.generateKey();
 				return Encrypter.secretKeyToString(key);
 			} catch (NoSuchAlgorithmException e) {
@@ -263,9 +261,7 @@ public final class Encrypter {
 	// *******************
 	private static PublicKey getPublicKey(String key, String alg) {
 		try {
-//			byte[] data = new BASE64Decoder().decodeBuffer(key);
 			byte[] data = Base64.getDecoder().decode(key);
-//			byte[] data = key.getBytes();
 			X509EncodedKeySpec keySpec = new X509EncodedKeySpec(data);
 			KeyFactory factory = KeyFactory.getInstance(alg);
 			return factory.generatePublic(keySpec);

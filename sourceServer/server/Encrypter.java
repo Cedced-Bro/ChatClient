@@ -1,6 +1,5 @@
 package server;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -28,7 +27,6 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import server.io.ConfigAdapter;
-import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
 
 /**

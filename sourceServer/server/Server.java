@@ -12,8 +12,9 @@ import server.io.ServerConnection;
 public class Server {
 	
 	// This is just a testPWD and a testUSR
-	public final static String usr = "root";
-	public final static String pwd = "toor";
+	public final static String[] usr = {"root", "admin", "Willi", "Hans"};
+	public final static String[] pwd = {"toor", "nimda", "illiW", "snaH"};
+	public final static String[] ID = {"0000", "0001", "0002", "0003"};
 	
 	// ********************
 	// * Public variables *

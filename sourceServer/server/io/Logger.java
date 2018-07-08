@@ -28,7 +28,7 @@ public class Logger {
 	static {
 		ini = new IniAdapter();
 		
-		boolean fileLogging = false;
+		boolean fileLogging = true;
 		setDefaultLogger(new Logger(fileLogging));
 	}
 

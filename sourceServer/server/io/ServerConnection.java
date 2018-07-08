@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.ServerSocket;
 
 public class ServerConnection {
-	// http://cs.lmu.edu/~ray/notes/javanetexamples/
 	// *****************
 	// * Static fields *
 	// *****************
